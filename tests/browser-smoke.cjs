@@ -19,8 +19,12 @@ let browser;
   await page.goto('http://127.0.0.1:8767');
   const component=page.locator('ecg-viewer');
   assert.equal(await component.isVisible(),false);
+  assert.equal(await page.locator('#record').inputValue(),'1');
   await page.locator('#file').setInputFiles(process.env.ECG_TEST_FILE || path.join(root,'examples/synthetic.wxml'));
+  assert.equal(await page.locator('#record').inputValue(),'1');
+  await page.locator('#record').fill('');
   await page.locator('#submit').click();
+  assert.equal(await page.locator('#record').inputValue(),'1');
   await page.waitForFunction(()=>document.querySelector('ecg-viewer').ready,{timeout:30000});
   await component.scrollIntoViewIfNeeded();
   assert.equal(await component.isVisible(),true);
@@ -62,6 +66,9 @@ let browser;
   const cors=await page.request.fetch('http://127.0.0.1:8767/convert?format=svg',{
     method:'OPTIONS',headers:{Origin:'http://localhost:5173','Access-Control-Request-Method':'POST','Access-Control-Request-Headers':'X-API-Key'}});
   assert.equal(cors.status(),200);assert.equal(cors.headers()['access-control-allow-origin'],'http://localhost:5173');
+  await page.locator('#record').fill('2');
+  await page.locator('#file').setInputFiles(path.join(root,'examples/synthetic.wxml'));
+  assert.equal(await page.locator('#record').inputValue(),'1');
   assert.deepEqual(errors,[]);
   console.log(JSON.stringify({browser:browser.version(),passed:['upload WXML','SVG blob no navegador','proporção de zoom','zoom 400% e 1600%','arraste','ajuste largura','teclado','mobile','exportação PDF','CORS'],pageErrors:errors}));
 })().catch(e=>{console.error(e.stack);process.exitCode=1;}).finally(async()=>{
