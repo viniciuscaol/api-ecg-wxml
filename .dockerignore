@@ -1,3 +1,5 @@
+.git
+.github
 .venv
 node_modules
 __pycache__

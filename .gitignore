@@ -1,0 +1,35 @@
+# Configuração local (preservar o modelo público)
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+test-results/
+*.egg-info/
+build/
+dist/
+
+# Testes de navegador
+node_modules/
+playwright-report/
+test-results-browser/
+
+# Exames e resultados locais (preservar a amostra sintética)
+*.wxml
+*.WXML
+!examples/synthetic.wxml
+output/
+outputs/
+
+# Editor / sistema
+.DS_Store
+Thumbs.db
+.idea/

@@ -1,5 +1,13 @@
 # Validação da entrega
 
+## Revisão de integração contínua — 04/11/2026
+
+- Suíte Python executada novamente em Python 3.12: **41 testes aprovados**. Permanece o aviso de depreciação do TestClient/Starlette.
+- `python -m pip check`: nenhuma dependência incompatível encontrada.
+- `scripts/smoke_api.py` executado contra Uvicorn local, com exame sintético e autenticação habilitada: saúde, rejeição de chave ausente/incorreta, inspeção, SVG vetorial, PDF e rejeição de XML inválido aprovados.
+- Adicionado workflow com jobs separados para testes Python e build/execução Docker. O estado de cada execução Docker deve ser consultado na aba Actions; o executor local desta revisão não dispõe de Docker.
+- O teste de navegador não foi reexecutado nesta revisão. As verificações das versões anteriores abaixo são mantidas como histórico.
+
 ## Versão 1.1.0 - visualização web vetorial
 
 - **41 testes Python aprovados**, incluindo os 28 anteriores e casos de SVG nativo, todos os vértices e escalas, janela de tempo, múltiplas folhas, escape XML, anonimização e formatos inválidos. Permanece um aviso de depreciação do transporte HTTP de testes do Starlette, sem falha.
