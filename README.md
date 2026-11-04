@@ -1,5 +1,7 @@
 # ECG WXML API
 
+[![CI](https://github.com/viniciuscaol/api-ecg-wxml/actions/workflows/ci.yml/badge.svg)](https://github.com/viniciuscaol/api-ecg-wxml/actions/workflows/ci.yml)
+
 API em Python/FastAPI que converte ECGs WinCardio em **SVG vetorial, PDF vetorial, PNG, JPEG ou ZIP**. A versão **1.1.0** inclui visualizador web reutilizável com zoom de 100% a 1600%, arraste e rolagem, além de Docker Compose, tela de upload em português, Swagger, conversor de linha de comando e testes.
 
 **Para visualizar o traçado dentro de outro sistema, use SVG.** O traçado é produzido diretamente em vetores, sem gerar PDF nem imagem de pixels no caminho. O navegador redesenha as linhas ao ampliar; todos os pontos da janela são preservados. O PDF continua disponível para exportação. A API preserva `format=pdf` como padrão por compatibilidade, enquanto a tela de demonstração começa em SVG contínuo.
@@ -187,7 +189,27 @@ python -m pytest -q
 
 Os testes verificam calibração, perfil inválido, DTD/entidades, incoerência de amostras, cobertura integral entre páginas, autenticação, limites de upload, PDF A4, PNG/JPEG e seus DPI, ZIP, anonimização parcial, recorte de amplitudes e renderização paralela protegida. O arquivo de exemplo é **sintético**; os anexos pessoais não fazem parte do código distribuído.
 
-Veja `VALIDACAO.md` para os resultados desta entrega. O Dockerfile/Compose é fornecido, mas não foi executado no ambiente de desenvolvimento desta entrega porque não havia Docker disponível.
+### Integração contínua
+
+O workflow [CI](.github/workflows/ci.yml) executa em pull requests para `main`, pushes na `main` e acionamento manual. São dois checks independentes:
+
+- **Testes Python:** instala as dependências em Python 3.12, executa `pip check` e a suíte `pytest`.
+- **API em Docker:** valida o Compose, constrói a imagem, aguarda o health check e testa a API por HTTP com `examples/synthetic.wxml`. Verifica autenticação, metadados, SVG, PDF e rejeição de XML inválido. O ambiente é encerrado ao final, inclusive quando um passo falha.
+
+O CI utiliza somente dados sintéticos e uma chave exclusiva de teste. Não precisa de segredos de produção, não publica imagens e não implanta a aplicação. O teste de navegador continua opcional, conforme `INTEGRACAO_WEB.md`; não faz parte desses dois jobs.
+
+Para reproduzir o teste HTTP com o contêiner em execução e uma chave configurada no `.env`:
+
+```bash
+# Use a mesma chave configurada no servidor; este valor é apenas um exemplo local.
+ECG_API_KEY='sua-chave-local-de-teste' python3 scripts/smoke_api.py
+```
+
+Se o servidor usar outra porta, configure também `ECG_TEST_URL=http://127.0.0.1:PORTA`. O script usa apenas a biblioteca padrão do Python e não grava arquivos convertidos.
+
+O `.env` é uma configuração local criada a partir de `.env.example` e não deve ser versionado. O `.gitignore` também exclui ambientes virtuais, caches e arquivos WXML locais, preservando a amostra sintética.
+
+Veja `VALIDACAO.md` para o histórico de verificações. O resultado de cada execução automatizada e os logs de build Docker ficam disponíveis na aba Actions. A validação técnica não representa homologação clínica.
 
 ## Referências de implementação
 
