@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ECG · Conversor WXML</title>
+<style>
+*{box-sizing:border-box}body{font:16px system-ui;background:#f2f6f6;color:#183b3b;margin:0;padding:32px 18px}main{max-width:840px;margin:auto}small{color:#557272}h1{font-size:32px;letter-spacing:-1px;margin:8px 0}p{line-height:1.6}form{padding:28px;background:white;border-radius:18px;border:1px solid #d9e5e5;display:grid;grid-template-columns:1fr 1fr;gap:20px;box-shadow:0 10px 40px #17454508}label{display:grid;gap:8px;font-size:14px;font-weight:600}input,select,button{font:inherit;padding:12px;border:1px solid #bacccc;border-radius:9px;width:100%;background:white;color:inherit}.wide{grid-column:1/-1}input[type=file]{border-style:dashed;padding:24px;background:#f8fbfb}button{background:#006a64;color:white;border:0;cursor:pointer;font-weight:600}button:disabled{opacity:.6;cursor:wait}#status{white-space:pre-wrap;font-size:14px}iframe{width:100%;height:850px;border:0;background:white;border-radius:10px}#preview img{width:100%;height:auto}#preview{margin-top:24px}a{color:#006a64}.check{display:flex;align-items:center;gap:10px}.check input{width:auto}@media(max-width:550px){form{grid-template-columns:1fr;padding:20px}h1{font-size:27px}}
+</style><main><small>VISUALIZADOR VETORIAL · WINCARDIO</small><h1>Explore o ECG com nitidez.</h1><p>Carregue o WXML para visualizar o traçado vetorial no navegador. Amplie, arraste e percorra os 12 canais. PDF, PNG e JPEG continuam disponíveis para exportação.</p>
+<form id="form"><label class="wide">Arquivo do exame<input id="file" type="file" accept=".wxml,.xml" required></label>
+<label>Formato<select id="format"><option value="svg">SVG vetorial · zoom no sistema</option><option value="pdf">PDF vetorial</option><option value="png">Imagem PNG</option><option value="jpeg">Imagem JPEG</option><option value="zip">ZIP: PDF, PNG e metadados</option></select></label>
+<label>Layout<select id="layout"><option value="continuous">Contínuo · 12 canais inteiros (SVG)</option><option value="reference">Referência · 12 quadros + ritmo</option><option value="complete">Completo · todas as amostras</option></select></label>
+<label>Grade<select id="grid"><option value="gray">Cinza, pontilhada</option><option value="red">Vermelha</option></select></label>
+<label>Resolução PNG/JPEG (não afeta SVG)<select id="dpi"><option>150</option><option>200</option><option selected>300</option></select></label>
+<label>Registro (opcional)<input id="record" type="number" min="1" max="30" placeholder="Todos os registros"></label>
+<label>Início em segundos<input id="offset" type="number" min="0" max="86400" step="0.001" value="0"></label>
+<label>Duração da janela contínua (opcional)<input id="duration" type="number" min="0.001" max="60" step="0.001" placeholder="Até o final do registro"></label>
+<label>Derivação de ritmo<select id="rhythm"><option>DII</option><option>DI</option><option>DIII</option><option>aVR</option><option>aVL</option><option>aVF</option><option>V1</option><option>V2</option><option>V3</option><option>V4</option><option>V5</option><option>V6</option></select></label>
+<label>Chave da API (se configurada)<input id="key" type="password" autocomplete="off" placeholder="X-API-Key"></label>
+<label class="check wide"><input id="anonymous" type="checkbox">Ocultar identificação do paciente, número do exame e série</label>
+<button id="submit" class="wide">Visualizar / gerar</button><div id="status" class="wide" role="status" aria-live="polite"></div></form>
+<p><small>Conversão técnica, sem interpretação diagnóstica. Validar a escala e a equivalência com o software original antes do uso clínico. Não são aplicados filtros adicionais.</small></p><ecg-viewer id="viewer" hidden></ecg-viewer><div id="preview"></div><p><a href="/docs">Documentação da API</a></p></main>
+<script type="module">
+import '/assets/ecg-viewer.js';
+let resultUrl;const $=id=>document.getElementById(id);
+$('format').addEventListener('change',()=>{const isSvg=$('format').value==='svg';$('layout').querySelector('[value=continuous]').disabled=!isSvg;if(!isSvg&&$('layout').value==='continuous')$('layout').value='reference';});
+$('form').addEventListener('submit',async event=>{event.preventDefault();$('submit').disabled=true;$('status').textContent='Preparando traçado…';$('preview').replaceChildren();$('viewer').clear();$('viewer').hidden=true;if(resultUrl)URL.revokeObjectURL(resultUrl);
+try{const params=new URLSearchParams({format:$('format').value,layout:$('layout').value,grid:$('grid').value,dpi:$('dpi').value,offset_seconds:$('offset').value,rhythm:$('rhythm').value,anonymize:$('anonymous').checked});if($('record').value)params.set('record',$('record').value);
+if($('duration').value&&$('layout').value==='continuous')params.set('duration_seconds',$('duration').value);
+const body=new FormData();body.append('file',$('file').files[0]);const headers={};if($('key').value)headers['X-API-Key']=$('key').value;
+const response=await fetch('/convert?'+params,{method:'POST',body,headers});if(!response.ok){const msg=await response.text();let detail;try{detail=JSON.parse(msg).detail}catch{}throw Error(typeof detail==='string'?detail:msg)}
+const blob=await response.blob();resultUrl=URL.createObjectURL(blob);const format=$('format').value;const link=document.createElement('a');link.href=resultUrl;link.download='ecg.'+(format==='jpeg'?'jpg':format);link.textContent='Baixar arquivo gerado';$('status').replaceChildren(link);
+if(format==='svg'){$('viewer').hidden=false;await $('viewer').load(blob);}else if(format==='pdf'){const frame=document.createElement('iframe');frame.src=resultUrl;frame.title='ECG convertido';$('preview').append(frame)}else if(['png','jpeg'].includes(format)){const img=document.createElement('img');img.src=resultUrl;img.alt='Traçado ECG convertido do WXML';$('preview').append(img)}
+}catch(error){$('status').textContent=error.message}finally{$('submit').disabled=false}});
+</script></html>

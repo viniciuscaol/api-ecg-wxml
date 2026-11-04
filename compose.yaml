@@ -1,0 +1,19 @@
+services:
+  ecg-api:
+    build: .
+    ports:
+      - "${ECG_BIND_IP:-127.0.0.1}:${ECG_PORT:-8000}:8000"
+    environment:
+      ECG_API_KEY: ${ECG_API_KEY:-}
+      ECG_CORS_ORIGINS: ${ECG_CORS_ORIGINS:-}
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 768m
+    cpus: 2.0
+    pids_limit: 64
