@@ -9,7 +9,7 @@
 <label>Layout<select id="layout"><option value="continuous">Contínuo · 12 canais inteiros (SVG)</option><option value="reference">Referência · 12 quadros + ritmo</option><option value="complete">Completo · todas as amostras</option></select></label>
 <label>Grade<select id="grid"><option value="gray">Cinza, pontilhada</option><option value="red">Vermelha</option></select></label>
 <label>Resolução PNG/JPEG (não afeta SVG)<select id="dpi"><option>150</option><option>200</option><option selected>300</option></select></label>
-<label>Registro (opcional)<input id="record" type="number" min="1" max="30" placeholder="Todos os registros"></label>
+<label>Registro<input id="record" type="number" min="1" max="30" value="1" placeholder="1"><small>Começa no registro 1. Deixe vazio para incluir todos em Referência ou Completo.</small></label>
 <label>Início em segundos<input id="offset" type="number" min="0" max="86400" step="0.001" value="0"></label>
 <label>Duração da janela contínua (opcional)<input id="duration" type="number" min="0.001" max="60" step="0.001" placeholder="Até o final do registro"></label>
 <label>Derivação de ritmo<select id="rhythm"><option>DII</option><option>DI</option><option>DIII</option><option>aVR</option><option>aVL</option><option>aVF</option><option>V1</option><option>V2</option><option>V3</option><option>V4</option><option>V5</option><option>V6</option></select></label>
@@ -20,9 +20,10 @@
 <script type="module">
 import '/assets/ecg-viewer.js';
 let resultUrl;const $=id=>document.getElementById(id);
+$('file').addEventListener('change',()=>{$('record').value='1';});
 $('format').addEventListener('change',()=>{const isSvg=$('format').value==='svg';$('layout').querySelector('[value=continuous]').disabled=!isSvg;if(!isSvg&&$('layout').value==='continuous')$('layout').value='reference';});
 $('form').addEventListener('submit',async event=>{event.preventDefault();$('submit').disabled=true;$('status').textContent='Preparando traçado…';$('preview').replaceChildren();$('viewer').clear();$('viewer').hidden=true;if(resultUrl)URL.revokeObjectURL(resultUrl);
-try{const params=new URLSearchParams({format:$('format').value,layout:$('layout').value,grid:$('grid').value,dpi:$('dpi').value,offset_seconds:$('offset').value,rhythm:$('rhythm').value,anonymize:$('anonymous').checked});if($('record').value)params.set('record',$('record').value);
+try{const params=new URLSearchParams({format:$('format').value,layout:$('layout').value,grid:$('grid').value,dpi:$('dpi').value,offset_seconds:$('offset').value,rhythm:$('rhythm').value,anonymize:$('anonymous').checked});if(!$('record').value&&$('layout').value==='continuous')$('record').value='1';if($('record').value)params.set('record',$('record').value);
 if($('duration').value&&$('layout').value==='continuous')params.set('duration_seconds',$('duration').value);
 const body=new FormData();body.append('file',$('file').files[0]);const headers={};if($('key').value)headers['X-API-Key']=$('key').value;
 const response=await fetch('/convert?'+params,{method:'POST',body,headers});if(!response.ok){const msg=await response.text();let detail;try{detail=JSON.parse(msg).detail}catch{}throw Error(typeof detail==='string'?detail:msg)}

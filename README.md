@@ -92,6 +92,8 @@ curl --fail-with-body -X POST \
 | `rhythm` | `DII` | Derivação usada na faixa longa. |
 | `anonymize` | `false` | Oculta identificação do paciente, número do exame e série. Mantém data/hora e dados do sinal; não é desidentificação completa. |
 
+Na tela de upload, o campo **Registro** começa preenchido com **1** e volta para 1 ao selecionar outro arquivo. Se for apagado no layout contínuo, a interface seleciona 1 novamente. Nos layouts Referência e Completo, deixá-lo vazio continua incluindo todos os registros. A API mantém seu contrato: para contínuo com múltiplos registros, envie `record` explicitamente.
+
 Novidades da versão 1.1: `format=svg`; `layout=continuous` para SVG; e `duration_seconds` (opcional, maior que zero e até 60), usado apenas na janela contínua. `reference` e `complete` também funcionam em SVG. No modo `complete`, um único SVG contém as folhas empilhadas, sem descartar páginas. `continuous` mostra os 12 canais inteiros, uma linha por derivação; exige selecionar `record` se o XML possuir vários registros. A janela contínua tem largura máxima de 1500 mm; use `duration_seconds` e `offset_seconds` para registros mais longos.
 
 ```bash
@@ -163,7 +165,9 @@ Imprima o PDF em **100% / tamanho real**, sem ajustar à página. A escala físi
 ## Perfil suportado e limites de equivalência
 
 - Raiz `WinCardio Tipo="exame"`, `Paciente`, `Exame/Registros/Registro/Canais/Canal` e amostras inteiras separadas por `;`, inclusive dentro de CDATA.
-- Metadados de amostragem e sensibilidade nos atributos de `Registros`; velocidade e ganho explícitos. Não há valores clínicos de escala assumidos quando o XML omite esses campos.
+- Metadados de amostragem e sensibilidade podem ser atributos ou elementos de `Registros` ou de cada `Registro`. Declarações duplicadas precisam ser equivalentes, e todos os registros precisam ter a mesma escala nesta versão. Velocidade e ganho continuam explícitos; nenhum valor é presumido quando faltam os dados.
+- `TaxaAmostragem` aceita número em Hz, `600 Hz`, `600 amostras por segundo`, `600 amostras/s`, `600 samples/s` e `600 sps`, com ponto ou vírgula decimal.
+- `Sensibilidade` aceita unidades por amplitude (`200/1mV`, `200 unidades/mV`, `200/1000uV`) ou amplitude por unidade digital (`5uV`, `5 µV/amostra`, `0,005mV/unidade`). As formas equivalentes são convertidas para unidades por mV. Um número sem unidade nesse campo permanece ambíguo e é rejeitado com mensagem específica.
 - Exatamente 12 derivações. `I`, `II` e `III` são aliases de `DI`, `DII` e `DIII`; comparação de nomes não diferencia maiúsculas. Canais extras/desconhecidos, duplicados e faltantes são rejeitados.
 - Aceita ponto ou vírgula decimal em parâmetros numéricos. Os canais devem ter o mesmo comprimento, compatível com `AmostrasPorBloco` quando declarado. Perfis comprimidos, cifrados, binários, com namespaces ou outras estruturas não são implementados.
 - `Filtro60Hz` e `FiltroMuscular` aparecem como elementos vazios no arquivo recebido e seus nomes aparecem na imagem original. A presença desses elementos é exibida como declaração do XML; a API não recria algoritmos de filtro proprietários nem comprova qual processamento foi feito na aquisição.
@@ -191,12 +195,14 @@ Os testes verificam calibração, perfil inválido, DTD/entidades, incoerência 
 
 ### Integração contínua
 
-O workflow [CI](.github/workflows/ci.yml) executa em pull requests para `main`, pushes na `main` e acionamento manual. São dois checks independentes:
+O workflow [CI](.github/workflows/ci.yml) executa em pull requests para `main`, pushes na `main` e acionamento manual. São três checks independentes:
 
 - **Testes Python:** instala as dependências em Python 3.12, executa `pip check` e a suíte `pytest`.
 - **API em Docker:** valida o Compose, constrói a imagem, aguarda o health check e testa a API por HTTP com `examples/synthetic.wxml`. Verifica autenticação, metadados, SVG, PDF e rejeição de XML inválido. O ambiente é encerrado ao final, inclusive quando um passo falha.
 
-O CI utiliza somente dados sintéticos e uma chave exclusiva de teste. Não precisa de segredos de produção, não publica imagens e não implanta a aplicação. O teste de navegador continua opcional, conforme `INTEGRACAO_WEB.md`; não faz parte desses dois jobs.
+- **Interface no navegador:** executa `tests/browser-smoke.cjs` com Chromium e amostra sintética, verificando upload, registro 1 inicial, recuperação do campo vazio no contínuo, retorno ao registro 1 ao trocar de arquivo, zoom, navegação e exportação PDF.
+
+O CI utiliza somente dados sintéticos e uma chave exclusiva de teste. Não precisa de segredos de produção, não publica imagens e não implanta a aplicação. A reprodução local do teste de navegador está documentada em `INTEGRACAO_WEB.md`.
 
 Para reproduzir o teste HTTP com o contêiner em execução e uma chave configurada no `.env`:
 
